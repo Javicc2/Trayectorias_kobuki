@@ -1,0 +1,1 @@
+scp -r "/home/mopad/catkin_ws/src/trayectorias_kobuki/src/datos_odom/" mopad@10.42.0.1:"C:/Users/mopad/OneDrive - Universidad de Castilla-La Mancha/Escritorio/Docs_robot_javi/"
