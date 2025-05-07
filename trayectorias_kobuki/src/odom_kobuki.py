@@ -5,10 +5,12 @@ import datetime
 import os
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Empty
+from trayectorias_kobuki.msg import angulo
 import tf
 from tf.transformations import euler_from_quaternion
 from math import degrees
 
+x, y, th = 0.0, 0.0, 0.0
 
 def to_positive_angle(th):
     while True:
@@ -20,11 +22,13 @@ def to_positive_angle(th):
             break
 
 def sub_odom():
-    sub = rospy.Subscriber('/odom',Odometry, callback_odom)
+    sub=rospy.Subscriber('/odom',Odometry, callback_odom)
+
 
 
 def callback_odom(data):
     global x,y,th
+    rospy.loginfo("Se ha llamado al subscriptor del odometro")
     x = data.pose.pose.position.x
     y = data.pose.pose.position.y
     q1 = data.pose.pose.orientation.x
@@ -36,18 +40,26 @@ def callback_odom(data):
     th = degrees(e[2])
     th = to_positive_angle(th)
 
-x, y, th = 0.0, 0.0, 0.0
+
+
+
+
 
 rospy.init_node("sub_odom")
-rate = rospy.Rate(100)
+rate = rospy.Rate(50)
 
 ## Reset odometry
 pub = rospy.Publisher('/mobile_base/commands/reset_odometry' ,Empty, queue_size=10)
 pub.publish()
 time.sleep(1)
 
+
+
 if __name__ == '__main__':
     sub_odom()
+    dato_angulo = angulo()
+    pub2 = rospy.Publisher('/angulo_odometria', angulo, queue_size=10)
+
 
     # Creacion del archivo .txt
     filepath = os.path.dirname((os.path.abspath(__file__)))+'/datos_odom/'
@@ -55,15 +67,20 @@ if __name__ == '__main__':
     full_filename=filepath+filename
     file=open(full_filename,"a")
     rospy.loginfo("Se ha abierto archivo de texto en %s",full_filename)
-    file.write("t    x     y    deg \n")
+    file.write("t        x         y         deg \n")
 
 
+    # Guardado de datos en .txt
     start=time.time()
     while not rospy.is_shutdown():
+
         t=time.time()-start
         #print("t:%.3f x:%.2f y:%.2f deg%.2f" % (t, x, y, th))
-        file.write("%.3f   %.2f   %.2f   %.2f \n"%(t, x, y, th))
+        file.write("%.3f      %.4f      %.4f      %.2f \n"%(t, x, y, th))
         #rospy.loginfo("Dato guardado con exito en txt")
+        #rospy.loginfo("La th del odometro es: %.2f", th)
+        dato_angulo.ang = th
+        pub2.publish(dato_angulo)
         rate.sleep()
 
     file.close()
