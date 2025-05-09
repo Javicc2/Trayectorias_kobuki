@@ -21,14 +21,10 @@ def to_positive_angle(th):
             return ans
             break
 
-def sub_odom():
-    sub=rospy.Subscriber('/odom',Odometry, callback_odom)
-
-
 
 def callback_odom(data):
     global x,y,th
-    rospy.loginfo("Se ha llamado al subscriptor del odometro")
+    #rospy.loginfo("Se ha llamado al subscriptor del odometro")
     x = data.pose.pose.position.x
     y = data.pose.pose.position.y
     q1 = data.pose.pose.orientation.x
@@ -39,7 +35,11 @@ def callback_odom(data):
     e = euler_from_quaternion(q)
     th = degrees(e[2])
     th = to_positive_angle(th)
+    dato_angulo.ang=th
+    pub2.publish(th)
 
+def sub_odom():
+    sub=rospy.Subscriber('/odom',Odometry, callback_odom)
 
 
 
@@ -55,33 +55,35 @@ time.sleep(1)
 
 
 
-if __name__ == '__main__':
-    sub_odom()
-    dato_angulo = angulo()
-    pub2 = rospy.Publisher('/angulo_odometria', angulo, queue_size=10)
 
+if __name__ == '__main__':
+    #Creamos la comunicacion
+    dato_angulo = angulo()
+    pub2 = rospy.Publisher('/angulo_odometria',angulo, queue_size=10)
+
+
+    # Creacion del suscriptor y proceso de guardado de datos en txt
+    start=time.time()
+    sub_odom()
 
     # Creacion del archivo .txt
-    filepath = os.path.dirname((os.path.abspath(__file__)))+'/datos_odom/'
-    filename = "Odom_"+str(datetime.datetime.now())+".txt"
-    full_filename=filepath+filename
-    file=open(full_filename,"a")
-    rospy.loginfo("Se ha abierto archivo de texto en %s",full_filename)
-    file.write("t        x         y         deg \n")
+    filepath = os.path.dirname((os.path.abspath(__file__))) + '/datos_odom/'
+    filename = "Odom_" + str(datetime.datetime.now()) + ".txt"
+    full_filename = filepath + filename
+    file = open(full_filename, "a")
+    # rospy.loginfo("Se ha abierto archivo de texto en %s",full_filename)
+    file.write("t           x            y            deg \n")
 
 
-    # Guardado de datos en .txt
-    start=time.time()
     while not rospy.is_shutdown():
-
-        t=time.time()-start
+        t = time.time() - start
         #print("t:%.3f x:%.2f y:%.2f deg%.2f" % (t, x, y, th))
-        file.write("%.3f      %.4f      %.4f      %.2f \n"%(t, x, y, th))
-        #rospy.loginfo("Dato guardado con exito en txt")
+        file.write("%.3f      %.2f      %.2f      %.2f \n" % (t, x, y, th))
+        # rospy.loginfo("Dato guardado con exito en txt")
         #rospy.loginfo("La th del odometro es: %.2f", th)
-        dato_angulo.ang = th
-        pub2.publish(dato_angulo)
         rate.sleep()
 
+
+
     file.close()
-    rospy.loginfo("Archivo cerrado con exito")
+    #rospy.loginfo("Archivo cerrado con exito")
